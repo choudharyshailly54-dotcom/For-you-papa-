@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Birthday Portal</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        :root {
+            --sky: #A2D2FF;
+            --pink: #FF85A1;
+            --deep: #4A90E2;
+            --glass: rgba(255, 255, 255, 0.92);
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body, html { margin: 0; padding: 0; height: 100%; width: 100%; overflow: hidden; font-family: 'Segoe UI', Roboto, sans-serif; background: var(--sky); }
+
+        /* --- ADVANCED BACKGROUND --- */
+        .sky-container { position: fixed; width: 100%; height: 100%; z-index: -1; background: linear-gradient(to bottom, #A2D2FF, #D1E9FF); }
+        
+        .cloud { position: absolute; background: white; border-radius: 100px; opacity: 0.5; animation: drift linear infinite; }
+        .balloon { position: absolute; width: 25px; height: 32px; background: var(--pink); border-radius: 50%; bottom: -50px; animation: floatUp linear infinite; }
+        .balloon::after { content: ''; position: absolute; width: 1px; height: 30px; background: rgba(0,0,0,0.1); top: 32px; left: 12px; }
+
+        @keyframes drift { from { transform: translateX(-200px); } to { transform: translateX(110vw); } }
+        @keyframes floatUp { from { bottom: -100px; } to { bottom: 110vh; } }
+
+        /* --- PAGE SYSTEM --- */
+        .page {
+            position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            opacity: 0; visibility: hidden; transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1); transform: scale(1.05); padding: 20px;
+        }
+        .active { opacity: 1; visibility: visible; transform: scale(1); }
+
+        .glass-panel {
+            background: var(--glass); backdrop-filter: blur(10px); padding: 35px; border-radius: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1); width: 100%; max-width: 400px; border: 1px solid white;
+        }
+
+        /* --- UI ELEMENTS --- */
+        input { width: 100%; padding: 15px; margin: 10px 0; border-radius: 12px; border: 1px solid #ddd; outline: none; font-size: 16px; }
+        button { 
+            width: 100%; padding: 15px; border-radius: 50px; border: none; background: var(--deep); color: white; 
+            font-size: 18px; font-weight: 600; cursor: pointer; transition: 0.3s; margin-top: 10px;
+        }
+        button:active { transform: scale(0.95); }
+
+        /* --- JAR & HEARTS --- */
+        .jar-wrapper { position: relative; width: 200px; height: 250px; cursor: pointer; }
+        .jar-img { width: 100%; filter: drop-shadow(0 10px 15px rgba(0,0,0,0.1)); transition: 0.3s; }
+        .jar-img:active { transform: scale(0.9); }
+        
+        .floating-heart {
+            position: absolute; width: 60px; height: 60px; background: #FF4D6D; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center; color: white; font-size: 10px;
+            font-weight: bold; cursor: pointer; box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            transition: 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 10;
+        }
+
+        /* --- CUSTOM MODAL (REPLACES ALERTS) --- */
+        #messageOverlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.4); backdrop-filter: blur(4px);
+            display: none; align-items: center; justify-content: center; z-index: 100;
+        }
+        .modal-card { background: white; padding: 30px; border-radius: 20px; width: 80%; max-width: 300px; text-align: center; }
+
+        /* --- GALLERY --- */
+        .gallery-viewport { width: 280px; height: 380px; overflow: hidden; border: 10px solid white; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+        .gallery-track { display: flex; animation: slideShow 18s linear infinite; }
+        .gallery-track img { width: 280px; height: 380px; object-fit: cover; }
+        @keyframes slideShow { from { transform: translateX(0); } to { transform: translateX(-2240px); } }
+
+        /* --- CAKE & CANDLE --- */
+        .cake-container { position: relative; width: 100%; max-width: 300px; }
+        .cake-img { width: 100%; border-radius: 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
+        .candle-unit { position: absolute; top: 10%; left: 50%; transform: translateX(-50%); font-size: 60px; }
+        .flame { animation: burn 0.2s infinite alternate; cursor: pointer; display: inline-block; }
+        @keyframes burn { from { transform: scale(1); opacity: 1; } to { transform: scale(1.2); opacity: 0.7; } }
+    </style>
+</head>
+<body>
+
+    <div class="sky-container" id="sky"></div>
+    <audio id="bgMusic" loop>
+        <source src="Gehra Hua (instrumental)  Dhurandhar  Himanshu Katara.mp3" type="audio/mpeg">
+    </audio>
+
+    <div id="messageOverlay" onclick="closeModal()">
+        <div class="modal-card">
+            <h3 id="modalSender" style="color: var(--pink); margin-top:0;"></h3>
+            <p id="modalText"></p>
+            <button style="font-size: 14px; padding: 10px;">Close</button>
+        </div>
+    </div>
+
+    <div id="p1" class="page active">
+        <div class="glass-panel">
+            <h2 style="color: var(--deep);">Birthday Portal</h2>
+            <input type="text" id="u" placeholder="Sanjeev">
+            <input type="password" id="p" placeholder="1702">
+            <button onclick="handleLogin()">Sign In</button>
+        </div>
+    </div>
+
+    <div id="p2" class="page">
+        <div class="jar-wrapper">
+            <img src="glass-jag-empty-with-lid-and-rope-twisted-in-bow-transparent-vessel-for-liquid-or-cereal-hand-drawn-watercolor-illustration-isolated-utensil-for-2Y2RG0H.jpg" class="jar-img" onclick="popHearts()">
+            <div id="heartStage"></div>
+        </div>
+        <p style="color: white; font-weight: 600; text-shadow: 0 2px 4px rgba(0,0,0,0.2); margin-top:30px;">Tap the jar to open wishes</p>
+        <button id="toGallery" style="display:none; width: auto;" onclick="toPage(3)">Continue Journey →</button>
+    </div>
+
+    <div id="p3" class="page">
+        <div class="gallery-viewport">
+            <div class="gallery-track">
+                <img src="IMG-20260216-WA0010.jpg"><img src="IMG-20260216-WA0006.jpg"><img src="IMG-20260216-WA0013.jpg">
+                <img src="IMG-20260216-WA0009.jpg"><img src="IMG-20260216-WA0014.jpg"><img src="34.jpg">
+                <img src="11194.jpg"><img src="4576.jpg">
+            </div>
+        </div>
+        <button onclick="toPage(4)" style="width: auto;">Next Surprise</button>
+    </div>
+
+    <div id="p4" class="page">
+        <div class="glass-panel">
+            <p>Make a wish silently...</p>
+            <h1 id="cd" style="color: var(--deep);">5</h1>
+            <div class="cake-container">
+                <img src="gateau-droit-st-valentin.jpg" class="cake-img">
+                <div class="candle-unit">🕯️<span class="flame" id="fl" onclick="blow()">🔥</span></div>
+            </div>
+            <button id="toLetter" style="display:none;" onclick="toPage(5)">Read My Letter</button>
+        </div>
+    </div>
+
+    <div id="p5" class="page">
+        <div class="glass-panel" id="letterBody" style="text-align: left; font-size: 15px;">
+            <h3 style="text-align: center; color: var(--deep);">To Papa</h3>
+            <p>Happiest Birthday papa.</p>
+            <p>I know, life will never be perfect for everyone but for me? Anshi? Mummy? Life IS perfect. Because we have you.</p>
+            <p>Yes, we don't show how we all loves you, cause it's impossible to reciprocate the love you gave us. Thank you very much for being with us 💗🧿</p>
+            <p style="text-align: center; font-weight: bold;">Once again happy birthday papa 🎂</p>
+        </div>
+        <button onclick="savePDF()" style="width: auto;">Download for Papa 📄</button>
+    </div>
+
+    <script>
+        // Setup Sky
+        const sky = document.getElementById('sky');
+        const createEl = (cls, count) => {
+            for(let i=0; i<count; i++){
+                let e = document.createElement('div'); e.className = cls;
+                e.style.left = Math.random() * 100 + '%';
+                e.style.animationDuration = (Math.random() * 10 + (cls === 'cloud' ? 20 : 10)) + 's';
+                e.style.animationDelay = Math.random() * 15 + 's';
+                if(cls === 'cloud') { e.style.top = Math.random() * 70 + '%'; e.style.width = '120px'; e.style.height = '40px'; }
+                sky.appendChild(e);
+            }
+        };
+        createEl('cloud', 10); createEl('balloon', 15);
+
+        const wishes = {
+            "Sushma": "Happy Birthday 🎂 💗",
+            "Shreyanshi": "Happppyyyyy birthday papaaa, you are my favourite hero😋🎀",
+            "Mummy": "Khoob khush raha, bhagwaan sab achha kar thun🧿🩷",
+            "Pappa": "Haa! Happy Birthday, Guddu!! Khoob khush badhiya😁✨",
+            "Shailly": "Happiest Birthday papa💖 Ram ji bless you with his dearest blessings 🎀"
+        };
+
+        function toPage(n) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            setTimeout(() => document.getElementById('p'+n).classList.add('active'), 100);
+        }
+
+        function handleLogin() {
+            if(document.getElementById('u').value === "Sanjeev" && document.getElementById('p').value === "1702") {
+                document.getElementById('bgMusic').play().catch(() => console.log("Music needs interaction"));
+                toPage(2);
+            } else { alert("Wrong credentials."); }
+        }
+
+        let solved = 0;
+        function popHearts() {
+            const stage = document.getElementById('heartStage');
+            if(stage.children.length > 0) return;
+            Object.keys(wishes).forEach((name, i) => {
+                setTimeout(() => {
+                    let h = document.createElement('div'); h.className = 'floating-heart';
+                    h.innerHTML = name;
+                    h.style.left = (Math.random() * 160 - 80) + 'px';
+                    h.style.top = '-' + (100 + i*50) + 'px';
+                    h.onclick = (e) => {
+                        e.stopPropagation();
+                        document.getElementById('modalSender').innerText = name;
+                        document.getElementById('modalText').innerText = wishes[name];
+                        document.getElementById('messageOverlay').style.display = 'flex';
+                        h.style.opacity = '0.3';
+                        solved++; if(solved >= 5) document.getElementById('toGallery').style.display = 'block';
+                    };
+                    stage.appendChild(h);
+                }, i * 400);
+            });
+        }
+
+        function closeModal() { document.getElementById('messageOverlay').style.display = 'none'; }
+
+        function blow() {
+            let t = 5;
+            let iv = setInterval(() => {
+                t--; document.getElementById('cd').innerText = t;
+                if(t <= 0) {
+                    clearInterval(iv);
+                    document.getElementById('fl').style.display = 'none';
+                    document.getElementById('toLetter').style.display = 'block';
+                    document.getElementById('cd').innerText = "WISH SENT!";
+                }
+            }, 1000);
+        }
+
+        function savePDF() {
+            const element = document.getElementById('letterBody');
+            html2pdf().from(element).save('For_Papa.pdf');
+        }
+    </script>
+</body>
+</html>
